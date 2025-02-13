@@ -67,7 +67,7 @@ sap.ui.define([
             
             this.setFooter();
             var userapi = new sap.ui.model.json.JSONModel();
-		    userapi.loadData("/services/userapi/attributes", "", false);
+		    userapi.loadData(this.getUrlBase() + "user-api/attributes", "", false);
             
         },
         fnAprobarTodos: function (oEvent) {
@@ -89,24 +89,44 @@ sap.ui.define([
                     });
                 });
                 sap.ui.core.BusyIndicator.show(0);
-    
+        
                 /* Llamamos RFC */
                 sAprobarTodos = this.sAprobarTodos(aItemsAprobar);
+                
                 sAprobarTodos.success(function (x) {
                     sap.ui.core.BusyIndicator.hide();
-    
+                    debugger;
+                    console.log("Respuesta del servidor antes de parsear:", x);
+
+                    console.log("Tipo de x:", typeof x);
+                    console.log("Contenido de x:", x);
+        
                     var oModel = new sap.ui.model.json.JSONModel();
-                    var oResponse = $.xml2json(x)["Body"]["ZmmRqRelmResponse"]["EtDocout"]["item"];
-                    if (!Array.isArray(oResponse)) {
-                        oResponse = [oResponse];
+                    var oResponse = [];
+        
+                    if (typeof x === "string") {
+                        var parser = new DOMParser();
+                        x = parser.parseFromString(x, "application/xml");
                     }
+        
+                    // 🟢 Extraer datos manualmente del XML
+                    var items = x.getElementsByTagName("item");
+                    for (var i = 0; i < items.length; i++) {
+                        var ebeln = items[i].getElementsByTagName("Ebeln")[0]?.textContent || "";
+                        var type = items[i].getElementsByTagName("Type")[0]?.textContent || "";
+                        var msg = items[i].getElementsByTagName("Msg")[0]?.textContent || "";
+        
+                        oResponse.push({ Ebeln: ebeln, Type: type, Msg: msg });
+                    }
+        
+                    console.log("Datos extraídos:", oResponse);
+        
                     oModel.setData(oResponse);
                     this.getView().setModel(oModel, "detalleEjecucion");
-                    //	this.getView().getModel().refresh();
-    
+        
                     this._getDialog().open();
-                    //console.log("exito");
                 }.bind(this));
+        
                 sAprobarTodos.fail(function (x) {
                     sap.ui.core.BusyIndicator.hide();
                     console.log(x);
@@ -135,21 +155,44 @@ sap.ui.define([
                 });
     
                 sap.ui.core.BusyIndicator.show(0);
+        
                 /* Llamamos RFC */
                 sRechazarTodos = this.sRechazarTodos(aItemsAprobar);
+                
                 sRechazarTodos.success(function (x) {
                     sap.ui.core.BusyIndicator.hide();
+                    debugger;
+                    console.log("Respuesta del servidor antes de parsear:", x);
+
+                    console.log("Tipo de x:", typeof x);
+                    console.log("Contenido de x:", x);
+        
                     var oModel = new sap.ui.model.json.JSONModel();
-                    var oResponse = $.xml2json(x)["Body"]["ZmmRqRelmResponse"]["EtDocout"]["item"];
-                    if (!Array.isArray(oResponse)) {
-                        oResponse = [oResponse];
+                    var oResponse = [];
+        
+                    if (typeof x === "string") {
+                        var parser = new DOMParser();
+                        x = parser.parseFromString(x, "application/xml");
                     }
+        
+                    // 🟢 Extraer datos manualmente del XML
+                    var items = x.getElementsByTagName("item");
+                    for (var i = 0; i < items.length; i++) {
+                        var ebeln = items[i].getElementsByTagName("Ebeln")[0]?.textContent || "";
+                        var type = items[i].getElementsByTagName("Type")[0]?.textContent || "";
+                        var msg = items[i].getElementsByTagName("Msg")[0]?.textContent || "";
+        
+                        oResponse.push({ Ebeln: ebeln, Type: type, Msg: msg });
+                    }
+        
+                    console.log("Datos extraídos:", oResponse);
+        
                     oModel.setData(oResponse);
                     this.getView().setModel(oModel, "detalleEjecucion");
-                    //	this.getView().getModel().refresh();
+        
                     this._getDialog().open();
-                    //console.log("exito");
                 }.bind(this));
+        
                 sRechazarTodos.fail(function (x) {
                     sap.ui.core.BusyIndicator.hide();
                     console.log(x);
@@ -173,7 +216,7 @@ sap.ui.define([
         _getDialog: function () {
             console.log("CFV _getDialog");
             if (!this._oDialog) {
-                this._oDialog = sap.ui.xmlfragment("ui.s2p.mm.requisition.approve.uis2pmmrequisitionapproveExtension.view.Resume", this);
+                this._oDialog = sap.ui.xmlfragment("pecogaapsolicitudes.fragment.view.Resume", this);
                 this.getView().addDependent(this._oDialog);
             }
     
@@ -245,7 +288,7 @@ sap.ui.define([
        </soapenv:Body>\
     </soapenv:Envelope>';
     
-            var url = "/coga/sap/bc/srt/rfc/sap/zmm_po_relm/600/zmm_po_relm/zmm_po_relm";
+            var url = this.getUrlBase() + "ODATA_FIORI_GATEWAY/sap/bc/srt/rfc/sap/zmm_po_relm/600/zmm_po_relm/zmm_po_relm";
     
             return jQuery.ajax({
                 url: url,
@@ -285,7 +328,7 @@ sap.ui.define([
        </soapenv:Body>\
     </soapenv:Envelope>';
     
-            var url = "/coga/sap/bc/srt/rfc/sap/zmm_rq_relm/600/zmm_rq_relm/zmm_rq_relm";
+            var url = this.getUrlBase() + "ODATA_FIORI_GATEWAY/sap/bc/srt/rfc/sap/zmm_rq_relm/600/zmm_rq_relm/zmm_rq_relm";
     
             return jQuery.ajax({
                 url: url,
@@ -412,46 +455,38 @@ sap.ui.define([
         },
     
         setFooter: function () {
-            setInterval(function (x) {
-    
-                //var header = sap.ui.getCore().byId("__bar1");
-                var page = this.getView().getContent()[0];
-                
-                page = page.getAggregation("_navMaster").getAggregation("pages")[0];
-                var header;
-                page ? header = page.getCustomHeader() : void 0;
-                if ((header) && (header.getContentRight()) && (header.getContentRight().length < 1)) {
-                    var oSelectAll = new sap.m.Button({
-                        icon: "sap-icon://multiselect-all",
-                        press: this.fnSelectAll.bind(this)
-                    });
-    
-                    header.addContentRight(oSelectAll);
-                    console.log(header);
-                    console.log("Termino de cargar");
-                }
-    
-                var bar;
-    
-                page ? bar = page.getFooter() : void 0;
-                if ((bar) && (bar.getContentRight()) && (bar.getContentRight().length < 1)) {
-                    var oAceptar = new sap.m.Button({
-                        text: "Aprobar todos",
-                        type: sap.m.ButtonType.Accept,
-                        press: this.fnAprobarTodos.bind(this)
-                    });
-    
-                    var oCancelar = new sap.m.Button({
-                        text: "Rechazar todos",
-                        type: sap.m.ButtonType.Reject,
-                        press: this.fnRechazarTodos.bind(this)
-                    });
-    
-                    bar.addContentLeft(oAceptar);
-                    bar.addContentRight(oCancelar)
-                }
-    
-            }.bind(this), 100);
+            var page = this.getView().getContent()[0];
+            if (!page) return;
+        
+            page = page.getAggregation("_navMaster")?.getAggregation("pages")[0];
+            if (!page) return;
+        
+            var header = page.getCustomHeader();
+            if (header && header.getContentRight().length < 1) {
+                var oSelectAll = new sap.m.Button({
+                    icon: "sap-icon://multiselect-all",
+                    press: this.fnSelectAll.bind(this)
+                });
+                header.addContentRight(oSelectAll);
+            }
+        
+            var bar = page.getFooter();
+            if (bar && bar.getContentRight().length < 1) {
+                var oAceptar = new sap.m.Button({
+                    text: "Aprobar todos",
+                    type: sap.m.ButtonType.Accept,
+                    press: this.fnAprobarTodos.bind(this)
+                });
+        
+                var oCancelar = new sap.m.Button({
+                    text: "Rechazar todos",
+                    type: sap.m.ButtonType.Reject,
+                    press: this.fnRechazarTodos.bind(this)
+                });
+        
+                bar.addContentLeft(oAceptar);
+                bar.addContentRight(oCancelar);
+            }
         },
     
         extHookOnInit: function () {
@@ -462,7 +497,7 @@ sap.ui.define([
             $.selectedItems = [];
             this.getOwnerComponent().getRouter().attachRoutePatternMatched(this.onRouteMatched, this);
             $.ListPO = this.getView().byId("list");
-            this.setFooter();
+            //this.setFooter();
             //	sap.ui.core.BusyIndicator.show(0);
     
             /* cargando el usuario actual */
@@ -554,32 +589,60 @@ sap.ui.define([
             //this.setMargenBoton();
         },
     
-        _handleItemPressDesktop: function (e) {
-            console.log("CFV _handleItemPressDesktop");
+        _handleItemPressDesktop: function (oEvent) {
+            debugger
             console.log("_handleItemPressDesktop");
-            this.setListItem(e);
-            if (!sap.ui.Device.system.phone) {
-                this._oApplicationImplementation.oSplitContainer.hideMaster();
-            }
-            console.log("CFV _handleItemPressDesktop");
-            //this.setMargenBoton();
-        },
-    
-        _handleItemPress: function(oEvent) {
-            var itemList = oEvent.getSource();
-            var oItem = itemList.getBindingContext().getObject()
-            var that = this;
-            that.getView().setModel(new sap.ui.model.json.JSONModel(oItem),"header");
-            
-            //var sOrigin = oItem.getCustomData()[0].getValue();
-            //var sWorkitemID = oItem.getCustomData()[1].getValue();
 
+            this.getView().setBusyIndicatorDelay(0);
+            this.getView().setBusy(true);
+       
+            // Obtener el item correcto
+            var item;
+            if (oEvent.getId() === "select") {
+                item = oEvent.getParameter("listItem");
+                console.log("Resultado de Item de lista: ",item);
+            } else {
+                item = oEvent.getSource();
+                console.log("Resultado de Item del contexto global: ",item);
+            }
+        
+            // Validar que item sea un ObjectListItem antes de continuar
+            console.log("Resultado de Item del contexto global: ",item instanceof sap.m.ObjectListItem);
+            if (!(item instanceof sap.m.ObjectListItem)) {
+                this.getView().setBusy(false);
+                console.error("El evento no proviene de un ObjectListItem.");
+                return;
+            }
+        
+            var oItem = item.getBindingContext().getObject();
+            console.log("Resultado de Item del contexto global oItem: ",oItem);
+            if (!oItem) {
+                this.getView().setBusy(false);
+                console.error("No se encontró un objeto válido en el contexto.");
+                return;
+            }
+        
+            // Actualizar modelo "header"
+            this.getView().setModel(new sap.ui.model.json.JSONModel(oItem), "header");
+
+        
+            
+                // 🔹 CORRECCIÓN: Obtener SplitContainer dinámicamente desde la vista
+                var oSplitContainer = this.getView().getParent();
+                if (oSplitContainer && oSplitContainer.isA("sap.m.SplitContainer") && !sap.ui.Device.system.phone) {
+                    oSplitContainer.hideMaster();
+                } else {
+                    console.warn("No se encontró el SplitContainer o no es válido.");
+                }
+        
             // Construcción de la URL para expandir datos
             var sPath = "/WorkflowTaskCollection(SAP__Origin='LOCAL',WorkitemID='" + oItem.WorkitemID + "')/HeaderDetails";
             var aExpand = ["HeaderItemDetails", "Notes", "Attachments"];
-            
+        
+            console.log("ruta: ", sPath);
+        
             var oModel = this.getView().getModel();
-
+        
             // Realizar la llamada OData
             oModel.read(sPath, {
                 urlParameters: {
@@ -587,21 +650,36 @@ sap.ui.define([
                 },
                 success: function(oData) {
                     sap.m.MessageToast.show("Datos cargados con éxito");
-                    
-                    that.getView().setModel(new sap.ui.model.json.JSONModel(oData),"detail");
-                    console.log(oData);
-                },
+                    this.getView().setModel(new sap.ui.model.json.JSONModel(oData), "detail");
+                    console.log("Modelo: ", oData);
+                    this.getView().setBusy(false);
+                }.bind(this),
                 error: function(oError) {
+                    this.getView().setBusy(false);
                     sap.m.MessageToast.show("Error al cargar los datos");
                     console.error(oError);
                 }
             });
         },
+        
+        _handleItemPress: function (oEvent) {
+            console.log("--_handleItemPress--");
+            debugger
+            var isPhone = this.getView().getModel("device").getData().isPhone;
+            this.fnCargarAprobadores(oEvent);
+        
+            try {
+                this._handleItemPressDesktop(oEvent);
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
     
         _handleSelectPress: function (oEvent) {
-            console.log("CFV _handleSelectPress");
             /* Is this a phone */
-            console.log("_handleSelectPress");
+            debugger
+            console.log("_handleSelectPress", oEvent);
             var isPhone;
             isPhone = this.getView().getModel("device").getData().isPhone;
             if (isPhone) {
@@ -609,43 +687,104 @@ sap.ui.define([
             } else {
                 this._handleItemPress(oEvent);
             }
-    
-            console.log("CFV _handleSelectPress");
-            //this.setMargenBoton();
         },
-    
+   
         _handleSelect: function (e) {
-            console.log("CFV _handleSelect");
             //console.log(e.getSource().getSelectedItems());
             console.log("_handleSelect");
             this.setListItem(e);
             if (!sap.ui.Device.system.phone) {
                 this._oApplicationImplementation.oSplitContainer.hideMaster();
             }
-            //this.setMargenBoton();
         },
-    
+
+        // fireSelectionChange: function (oEvent) {
+        //     console.log("fireSelectionChange ejecutado");
+            
+        //     // Obtener el ítem seleccionado
+        //     var oList = this.getView().byId("list");
+        //     var aSelectedItems = oList.getSelectedItems(); // Obtiene todos los seleccionados
+        
+        //     if (aSelectedItems.length > 0) {
+        //         // Pasa el primer ítem seleccionado a _handleSelectPress
+        //         this._handleSelectPress(aSelectedItems[0]);
+        //     }
+        // },
+
+        // fireSelectionChange: function (e) {
+        //     $.selectedItems = e.getSource().getSelectedItems();
+        //     console.log("fireSelectionChange");
+        //     console.log("Dtao: ", $.selectedItems);
+        //     this._handleSelectPress(oEvent);
+        // },
+   
+        // fireSelectionChange: function (e) {
+        //     debugger
+        //     $.selectedItems = e.getSource().getSelectedItems();
+        //     console.log("fireSelectionChange", $.selectedItems);
+        //     console.log("Evento: ",e);
+        // },
+
         fireSelectionChange: function (e) {
-            console.log("CFV fireSelectionChange");
-            $.selectedItems = e.getSource().getSelectedItems();
-            console.log("fireSelectionChange");
-            //this.setMargenBoton();
+            debugger;
+            console.log("fireSelectionChange ejecutado", e);
+        
+            var aSelectedItems = e.getSource().getSelectedItems();
+            console.log("Elementos seleccionados:", aSelectedItems);
+        
+            if (aSelectedItems.length > 0) {
+                var oLastSelectedItem = aSelectedItems[aSelectedItems.length - 1]; // Último seleccionado
+                console.log("Último seleccionado:", oLastSelectedItem);
+        
+                var oEventMock = {
+                    getId: function () { return "select"; },
+                    getParameter: function () { return oLastSelectedItem; },
+                    getSource: function () { return e.getSource(); }
+                };
+        
+                this._handleSelectPress(oEventMock);
+            }
         },
-    
+
+        // fireSelectionChange: function (e) {
+        //     debugger;
+        //     console.log("fireSelectionChange ejecutado", e);
+        
+        //     // Obtener la lista de elementos seleccionados
+        //     var selectedItems = e.getSource().getSelectedItems();
+        //     console.log("Elementos seleccionados:", selectedItems);
+        
+        //     // Si hay al menos un elemento seleccionado, construir un nuevo evento 'select'
+        //     if (selectedItems.length > 0) {
+        //         var fakeSelectEvent = {
+        //             getId: function() { return "select"; },
+        //             getParameter: function(param) {
+        //                 if (param === "listItem") {
+        //                     return selectedItems[0]; // Pasar el primer elemento seleccionado
+        //                 }
+        //             },
+        //             getSource: function() {
+        //                 return e.getSource();
+        //             }
+        //         };
+        
+        //         // Llamar a _handleSelectPress con el evento transformado en "select"
+        //         this._handleSelectPress(fakeSelectEvent);
+        //     } else {
+        //         console.warn("No hay elementos seleccionados en selectionChange.");
+        //     }
+        // },
+   
         _navToListItem: function (l) {
-            console.log("CFV _navToListItem");
             this.oRouter.navTo(this.getDetailRouteName(), this.getDetailNavigationParameters(l), !sap.ui.Device.system.phone);
-            //this.setMargenBoton();
         },
-    
+
         __handleSelect: function (oEvent) {
-            console.log("CFV __handleSelect");
             this._handleSelect(oEvent);
             $.selectedItems = e.getSource().getSelectedItems();
             console.log(e.getSource().getSelectedItems());
             this.fnCargarAprobadores(oEvent);
             console.log("__handleSelect");
-            //this.setMargenBoton();
         },
     
         fnCargarAprobadores: function (oEvent) {

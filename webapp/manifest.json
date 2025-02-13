@@ -27,17 +27,26 @@
       }
     },
     "crossNavigation": {
-            "inbounds": {
-                "intent1": {
-                    "signature": {
-                        "parameters": {},
-                        "additionalParameters": "allowed"
-                    },
-                    "semanticObject": "Dynamic",
-                    "action": "display"
-                }
-            }
+      "inbounds": {
+        "dynamicTile": {
+          "signature": {
+            "parameters": {},
+            "additionalParameters": "allowed"
+          },
+          "semanticObject": "AprobacionSolicitud",
+          "action": "display",
+         "title": "Aprobación de\u000Asolicitudes de compra",
+          "subTitle": "Solicitud de Pedidos",
+          "info": "Pendientes",
+          "icon": "sap-icon://task",
+          "indicatorDataSource": {
+            "dataSource": "mainService",
+            "path": "/fcdc7d02-069a-48cb-bf38-a24f12efb2c1.pecogaapsolicitudes.pecogaapsolicitudes/~e56b1963-8e42-4c63-9efa-bc3181d95c2b~/ODATA_FIORI_GATEWAY_CLONING/sap/opu/odata/SAP/GBAPP_PRAPPROVAL;mo/WorkflowTaskCollection/$count",
+            "refresh": 5
+          }
         }
+      }
+    }
   },
   "sap.ui": {
     "technology": "UI5",

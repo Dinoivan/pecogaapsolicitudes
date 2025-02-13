@@ -1,12 +1,11 @@
 <mvc:View controllerName="pecogaapsolicitudes.controller.Main"
     xmlns:mvc="sap.ui.core.mvc" xmlns:core="sap.ui.core" xmlns="sap.m" xmlns:form="sap.ui.layout.form" xmlns:f="sap.ui.layout.form" xmlns:layout="sap.ui.layout">
-    <SplitApp id="SplitApp">
+    <SplitApp id="SplitApp" mode="ShowHideMode">
         <masterPages>
-            <Page id="page" title="{i18n>view.Master.title} 
-                ({= ${'/WorkflowTaskCollection'}.length})">
+            <Page id="page" title="{i18n>view.Master.title} ({= ${path: '/WorkflowTaskCollection>/d/results'}.length})">
                 <content>
                     <List id="list" mode="MultiSelect"
-                        includeItemInSelection="false"
+                        includeItemInSelection="true"
                         selectionChange="fireSelectionChange"
                         items="{
                             path: '/WorkflowTaskCollection',
@@ -16,8 +15,11 @@
                                 $inlinecount: 'allpages'
                             }
                         }">
-                        <ObjectListItem id="MAIN_LIST_ITEM" type="Active" press="_handleItemPress" title="{PrNumber} {CreatedByName}"
-                            number="{path : 'Value', formatter : '.formatMoney'}" numberUnit="{Currency}">
+                        <ObjectListItem id="MAIN_LIST_ITEM" 
+                                        type="Active" 
+                                        press="_handleItemPress" 
+                                        title="{PrNumber} {CreatedByName}"
+                                        number="{path : 'Value', formatter : '.formatMoney'}" numberUnit="{Currency}">
                             <firstStatus>
                                 <ObjectStatus id="ListStatusWiCreatedAt"
                                     text="{path:'WiCreatedAt', formatter:'.formatFechaUTC'}"></ObjectStatus>
@@ -38,7 +40,7 @@
         </masterPages>
         <detailPages>
             <Page id="WIDetail" class="sapUiFioriObjectPage" title="{i18n>view.Detail.title}">
-                <ObjectHeader id="Header" introPress="onAgentPress" introActive="true" title="{header>CreatedByName}" titleActive="true"
+                <ObjectHeader id="Header" introPress="onAgentPress" introActive="true" title="{header>/CreatedByName}" titleActive="true"
                     number="{path: 'header>/Value', formatter: '.formatMoney'}" numberUnit="{header>/Currency}">
                     <statuses>
                         <ObjectStatus id="ObjectHeaderStatusWiCreatedAt" text="{path: 'header>/WiCreatedAt', formatter: '.formatFechaUTC'}"></ObjectStatus>
